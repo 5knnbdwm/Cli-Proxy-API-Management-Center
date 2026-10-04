@@ -121,6 +121,8 @@
 
 .sort {
   flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
   min-width: 148px;
   max-width: 100%;
 

@@ -31,6 +31,10 @@ export interface TimelineLimit {
   label: string;
   /** Remaining percent, 0..100. */
   remaining: number;
+  /** When this limit next resets, if the provider reports it. */
+  resetAtMs: number | null;
+  /** Window length in hours, if known. */
+  periodHours: number | null;
 }
 
 /** A manual quota-reset credit attached to a Codex credential. */
@@ -330,6 +334,16 @@ export interface TimelineLaneInput {
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
 
+/** Reset instant and window length of a source window, normalized for a TimelineLimit. */
+const timingOf = (window: { resetAtMs?: number | null; periodHours?: number | null }) => ({
+  resetAtMs:
+    typeof window.resetAtMs === 'number' && Number.isFinite(window.resetAtMs)
+      ? window.resetAtMs
+      : null,
+  periodHours:
+    typeof window.periodHours === 'number' && window.periodHours > 0 ? window.periodHours : null,
+});
+
 /**
  * Build a lane for one credential.
  *
@@ -412,6 +426,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
         .map((window) => ({
           label: window.label ?? '',
           remaining: clampPercent(100 - (window.usedPercent as number)),
+          ...timingOf(window),
         })),
       resetCredits,
     };
@@ -442,6 +457,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
         .map((window) => ({
           label: window.label ?? window.id,
           remaining: window.remainingPercent as number,
+          ...timingOf(window),
         })),
     };
   }
@@ -472,6 +488,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
           label: entry.product ?? '',
           remaining:
             typeof entry.usagePercent === 'number' ? clampPercent(100 - entry.usagePercent) : null,
+          ...timingOf({ resetAtMs: billing.resetAtMs, periodHours: billing.periodHours ?? 24 * 7 }),
         }))
         .filter((limit): limit is TimelineLimit => limit.remaining !== null),
     };
@@ -498,7 +515,11 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       periodHours: chosen.periodHours ?? null,
       remaining: remainingOf(chosen),
       limits: buckets
-        .map((bucket) => ({ label: bucket.label ?? '', remaining: remainingOf(bucket) }))
+        .map((bucket) => ({
+          label: bucket.label ?? '',
+          remaining: remainingOf(bucket),
+          ...timingOf(bucket),
+        }))
         .filter((limit): limit is TimelineLimit => limit.remaining !== null),
     };
   }
@@ -520,7 +541,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       periodHours: chosen.periodHours ?? null,
       remaining: remainingOf(chosen),
       limits: rows
-        .map((row) => ({ label: row.label ?? '', remaining: remainingOf(row) }))
+        .map((row) => ({ label: row.label ?? '', remaining: remainingOf(row), ...timingOf(row) }))
         .filter((limit): limit is TimelineLimit => limit.remaining !== null),
     };
   }
@@ -563,6 +584,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
         .map((window) => ({
           label: `meta_quota.${window.id}`,
           remaining: remainingOf(window),
+          ...timingOf(window),
         }))
         .filter((limit): limit is TimelineLimit => limit.remaining !== null),
     };

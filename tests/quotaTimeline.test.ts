@@ -275,7 +275,7 @@ describe('buildTimelineLane', () => {
     expect(session.remaining).toBe(80);
 
     // Every limit is still summarized in the lane head regardless of the pick.
-    expect(weekly.limits).toEqual([
+    expect(weekly.limits).toMatchObject([
       { label: '7-day', remaining: 7 },
       { label: '5-hour', remaining: 80 },
     ]);
@@ -366,7 +366,7 @@ describe('buildTimelineLane', () => {
 
     expect(lane.anchorMs).toBe(5000);
     expect(lane.remaining).toBe(46);
-    expect(lane.limits).toEqual([
+    expect(lane.limits).toMatchObject([
       { label: 'Daily', remaining: 46 },
       { label: 'Monthly', remaining: 73 },
     ]);
@@ -395,7 +395,7 @@ describe('buildTimelineLane', () => {
     expect(lane.periodHours).toBe(168);
     // remainingFraction is REMAINING, so it is not inverted.
     expect(lane.remaining).toBe(82);
-    expect(lane.limits).toEqual([
+    expect(lane.limits).toMatchObject([
       { label: '5h', remaining: 40 },
       { label: 'Weekly', remaining: 82 },
     ]);
@@ -437,7 +437,7 @@ describe('buildTimelineLane', () => {
     expect(lane.periodHours).toBe(168);
     expect(lane.remaining).toBe(95);
     // GrokChat has no percentage, so it is not summarized.
-    expect(lane.limits).toEqual([{ label: 'GrokBuild', remaining: 95 }]);
+    expect(lane.limits).toMatchObject([{ label: 'GrokBuild', remaining: 95 }]);
   });
 
   test('xai without a weekly limit produces no window at all', () => {
